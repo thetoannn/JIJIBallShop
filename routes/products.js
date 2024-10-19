@@ -81,14 +81,16 @@ router.get(`/`, async (req, res) => {
   if (
     req.query.location !== null &&
     req.query.location !== undefined &&
-    req.query.location !== ""
+    req.query.location !== "" && req.query.location !== "All"
   ) {
     productList = await Product.find({ location: req.query.location })
       .populate("category")
       .skip((page - 1) * perPage)
       .limit(perPage)
       .exec();
-  } else {
+  } 
+
+  else {
     productList = await Product.find()
       .populate("category")
       .skip((page - 1) * perPage)
@@ -105,7 +107,7 @@ router.get(`/`, async (req, res) => {
 
 router.get(`/catName`, async (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const perPage = parseInt(req.query.perPage);
+  const perPage = parseInt(req.query.perPage) || 10; // Đảm bảo có giá trị mặc định cho perPage
   const totalPosts = await Product.countDocuments();
   const totalPages = Math.ceil(totalPosts / perPage);
 
@@ -115,7 +117,8 @@ router.get(`/catName`, async (req, res) => {
 
   let productList = [];
 
-  if (req.query.page !== "" && req.query.perPage !== "") {
+  // Điều kiện khi không phải location là "All"
+  if (req.query.location !== "All" && req.query.page !== "" && req.query.perPage !== "") {
     productList = await Product.find({
       location: req.query.location,
       catName: req.query.catName,
@@ -131,16 +134,26 @@ router.get(`/catName`, async (req, res) => {
       page: page,
     });
   } else {
-    productList = await Product.find({
-      location: req.query.location,
-      catName: req.query.catName,
-    });
+    // Trường hợp location === "All" hoặc không có điều kiện location
+    const query = { catName: req.query.catName };
+    if (req.query.location !== "All") {
+      query.location = req.query.location; // Chỉ thêm location nếu không phải "All"
+    }
+
+    productList = await Product.find(query)
+      .populate("category")
+      .skip((page - 1) * perPage)
+      .limit(perPage)
+      .exec();
 
     return res.status(200).json({
       products: productList,
+      totalPages: totalPages,
+      page: page,
     });
   }
 });
+
 
 router.get(`/catId`, async (req, res) => {
   const page = parseInt(req.query.page) || 1;

@@ -34,6 +34,39 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+// router.post(`/upload`, upload.array("images"), async (req, res) => {
+//   imagesArr = [];
+
+//   try {
+//     for (let i = 0; i < req.files?.length; i++) {
+//       const options = {
+//         use_filename: true,
+//         unique_filename: false,
+//         overwrite: false,
+//       };
+
+//       const img = await cloudinary.uploader.upload(
+//         req.files[i].path,
+//         options,
+//         function (error, result) {
+//           imagesArr.push(result.secure_url);
+//           fs.unlinkSync(`uploads/${req.files[i].filename}`);
+//         }
+//       );
+//     }
+
+//     let imagesUploaded = new ImageUpload({
+//       images: imagesArr,
+//     });
+
+//     imagesUploaded = await imagesUploaded.save();
+
+//     return res.status(200).json(imagesArr);
+//   } catch (error) {
+//     console.log(error);
+//   }
+// });
+
 router.post(`/upload`, upload.array("images"), async (req, res) => {
   imagesArr = [];
 
@@ -45,14 +78,16 @@ router.post(`/upload`, upload.array("images"), async (req, res) => {
         overwrite: false,
       };
 
-      const img = await cloudinary.uploader.upload(
-        req.files[i].path,
+      const img = await cloudinary.uploader.upload_stream(
         options,
-        function (error, result) {
+        (error, result) => {
+          if (error) throw error;
           imagesArr.push(result.secure_url);
-          fs.unlinkSync(`uploads/${req.files[i].filename}`);
         }
       );
+
+      // Truyền buffer từ bộ nhớ đệm
+      img.end(req.files[i].buffer);
     }
 
     let imagesUploaded = new ImageUpload({
@@ -63,9 +98,11 @@ router.post(`/upload`, upload.array("images"), async (req, res) => {
 
     return res.status(200).json(imagesArr);
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    res.status(500).send("Error uploading images.");
   }
 });
+
 
 router.get(`/`, async (req, res) => {
   const page = parseInt(req.query.page) || 1;

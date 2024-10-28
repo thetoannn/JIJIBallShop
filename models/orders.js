@@ -21,10 +21,10 @@ const ordersSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    paymentId: {
-        type: String,
-        required: true
-    },
+    // paymentId: {
+    //     type: String,
+    //     required: true
+    // },
     email: {
         type: String,
         required: true
